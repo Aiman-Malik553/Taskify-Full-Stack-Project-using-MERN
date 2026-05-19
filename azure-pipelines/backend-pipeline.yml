@@ -32,7 +32,7 @@ stages:
             displayName: 'Build Backend Image'
             inputs:
               command: build
-              repository: $(BACKEND_IMAGE_NAME)
+              repository: $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME)  # ← YAHAN
               dockerfile: server/Dockerfile
               buildContext: server/
               tags: |
@@ -43,7 +43,7 @@ stages:
             displayName: 'Push Backend Image to ACR'
             inputs:
               command: push
-              repository: $(BACKEND_IMAGE_NAME)
+              repository: $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME)  # ← AUR YAHAN
               tags: |
                 $(imageTag)
                 latest
