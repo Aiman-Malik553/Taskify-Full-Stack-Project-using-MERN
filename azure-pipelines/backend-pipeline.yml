@@ -22,23 +22,18 @@ stages:
         steps:
           - checkout: self
 
-          - task: AzureCLI@2
-            displayName: 'Build and Push Backend Image via Azure CLI'
+          # Native Docker task directly using service connection to bypass spelling mistakes
+          - task: Docker@2
+            displayName: 'Build and Push Backend Image to ACR'
             inputs:
-              azureSubscription: $(AZURE_SUBSCRIPTION)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                # Azure Container Registry mein login
-                az acr login --name $(DOCKER_REGISTRY)
-                
-                # Image build karna sahi context aur Dockerfile path ke sath
-                docker build -f server/Dockerfile -t $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):$(imageTag) ./server
-                docker build -f server/Dockerfile -t $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):latest ./server
-                
-                # Images ko ACR mein push karna
-                docker push $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):$(imageTag)
-                docker push $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):latest
+              containerRegistry: 'acr-service-connection'
+              repository: $(BACKEND_IMAGE_NAME)
+              command: 'buildAndPush'
+              Dockerfile: 'server/Dockerfile'
+              buildContext: '$(Build.SourcesDirectory)/server'
+              tags: |
+                $(imageTag)
+                latest
 
   - stage: DeployProd
     displayName: 'Deploy to Production'
@@ -58,4 +53,4 @@ stages:
                   inputs:
                     azureSubscription: $(AZURE_SUBSCRIPTION)
                     appName: $(BACKEND_APP_NAME)
-                    containers: $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):$(imageTag)
+                    containers: 'acrcloudpjrojaiman.azurecr.io/$(BACKEND_IMAGE_NAME):$(imageTag)'
