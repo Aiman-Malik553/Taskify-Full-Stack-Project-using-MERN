@@ -22,17 +22,23 @@ stages:
         steps:
           - checkout: self
 
-          - task: Docker@2
-            displayName: 'Build and Push Backend Image'
+          - task: AzureCLI@2
+            displayName: 'Build and Push Backend Image via Azure CLI'
             inputs:
-              command: buildAndPush
-              containerRegistry: acr-service-connection
-              repository: $(BACKEND_IMAGE_NAME)
-              dockerfile: server/Dockerfile
-              buildContext: server/
-              tags: |
-                $(imageTag)
-                latest
+              azureSubscription: $(AZURE_SUBSCRIPTION)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Azure Container Registry mein login
+                az acr login --name $(DOCKER_REGISTRY)
+                
+                # Image build karna sahi context aur Dockerfile path ke sath
+                docker build -f server/Dockerfile -t $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):$(imageTag) ./server
+                docker build -f server/Dockerfile -t $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):latest ./server
+                
+                # Images ko ACR mein push karna
+                docker push $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):$(imageTag)
+                docker push $(DOCKER_REGISTRY)/$(BACKEND_IMAGE_NAME):latest
 
   - stage: DeployProd
     displayName: 'Deploy to Production'
